@@ -1,0 +1,9 @@
+customtkinter
+pillow
+rapidfuzz
+argostranslate
+pyautogui
+pytesseract
+PyQt6
+opencv-python
+easyocr

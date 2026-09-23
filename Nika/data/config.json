@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "language": "uk",
+  "context_size": 5,
+  "dialogue_sources": [
+    "greetings.json",
+    "small_talk.json",
+    "emotions.json",
+    "compliments.json",
+    "thanks.json",
+    "support.json",
+    "help.json",
+    "farewell.json",
+    "weather.json",
+    "jokes.json",
+    "unknown.json"
+  ],
+  "fallback": "unknown.json"
+}
