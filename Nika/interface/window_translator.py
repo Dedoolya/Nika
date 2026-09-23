@@ -39,7 +39,7 @@ class WindowTranslator:
         try:
             import easyocr
             print("⏳ Завантаження OCR...")
-            self.reader = easyocr.Reader(["ja", "en"], gpu=False)
+            self.reader = easyocr.Reader(["uk", "en", "ru"], gpu=False)
             print("✅ OCR готовий")
             return True
         except Exception as error:
