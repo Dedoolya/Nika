@@ -1,46 +1,86 @@
+import re
+
 import argostranslate.translate
+
 from core.translate_cache import TranslationCache
 
 
 class Translator:
     def __init__(self):
-        self.reload_languages()
+        self.languages = []
         self.cache = TranslationCache()
+        self.reload_languages()
 
     def reload_languages(self):
         self.languages = argostranslate.translate.get_installed_languages()
 
+    def _installed_codes(self):
+        return {language.code for language in self.languages}
+
+    def _detect_source_language(self, text):
+        """Просте офлайн-визначення мови для режиму auto."""
+        installed = self._installed_codes()
+
+        if re.search(r"[іїєґІЇЄҐ]", text) and "uk" in installed:
+            return "uk"
+
+        if re.search(r"[ыэъёЫЭЪЁ]", text) and "ru" in installed:
+            return "ru"
+
+        if re.search(r"[а-яА-Я]", text):
+            if "uk" in installed:
+                return "uk"
+            if "ru" in installed:
+                return "ru"
+
+        if "en" in installed:
+            return "en"
+
+        return None
+
     def translate(self, text, source="en", target="uk"):
-        # 1. Формуємо ключ для кешу
+        text = text.strip()
+
+        if not text:
+            return ""
+
+        if source == target:
+            return text
+
+        if source == "auto":
+            detected = self._detect_source_language(text)
+
+            if detected is None:
+                print("⚠️ Не вдалося визначити мову тексту")
+                return text
+
+            source = detected
+
+        installed = self._installed_codes()
+
+        if source not in installed:
+            raise ValueError(f"Мова джерела {source} не встановлена")
+
+        if target not in installed:
+            raise ValueError(f"Мова перекладу {target} не встановлена")
+
         cached = self.cache.get(source, target, text)
         if cached is not None:
             print("⚡ Переклад із кешу")
             return cached
 
-        translated = ""
         try:
-            # 2. Пробуємо прямий переклад
-            translated = argostranslate.translate.translate(text, source, target)
+            translated = argostranslate.translate.translate(
+                text,
+                source,
+                target,
+            )
+        except Exception as error:
+            print(f"❌ Помилка перекладу {source} → {target}: {error}")
+            return text
 
-            # 3. Якщо результат порожній або дивний — пробуємо через англійську
-            if (not translated.strip()) and source != "en":
-                mid = argostranslate.translate.translate(text, source, "en")
-                translated = argostranslate.translate.translate(mid, "en", target)
+        if not translated or not translated.strip():
+            return text
 
-        except Exception as e:
-            print("❌ Помилка перекладу:", e)
-            # fallback через англійську
-            if source != "en":
-                try:
-                    mid = argostranslate.translate.translate(text, source, "en")
-                    translated = argostranslate.translate.translate(mid, "en", target)
-                except Exception as e2:
-                    print("❌ Fallback теж не спрацював:", e2)
-                    translated = text  # повертаємо оригінал
-            else:
-                translated = text
-
-        # 4. Записуємо у кеш
         self.cache.add(source, target, text, translated)
-
         return translated
