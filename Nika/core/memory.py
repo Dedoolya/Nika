@@ -5,11 +5,7 @@ from core.paths import DATA_DIR
 
 
 class Memory:
-    def __init__(
-        self,
-        log_path=None,
-        config_path=None,
-    ):
+    def __init__(self, log_path=None, config_path=None):
         self.history = []
         self.log_path = log_path or os.path.join(DATA_DIR, "messages.log")
         self.config_path = config_path or os.path.join(DATA_DIR, "config.json")
@@ -24,7 +20,6 @@ class Memory:
         if os.path.exists(self.config_path):
             with open(self.config_path, "r", encoding="utf-8") as file:
                 config = json.load(file)
-
             self.context_size = config.get("context_size", 5)
 
         self._load_history()
@@ -40,7 +35,6 @@ class Memory:
 
                     role, message = line.split(": ", 1)
                     self.history.append((role, message))
-
         except OSError:
             self.history = []
 
@@ -49,6 +43,20 @@ class Memory:
 
         with open(self.log_path, "a", encoding="utf-8") as file:
             file.write(f"{role}: {message}\n")
+
+    def recall(self, key):
+        key = key.strip().lower()
+
+        for role, message in reversed(self.history):
+            if role != "user" or "=" not in message:
+                continue
+
+            saved_key, value = message.split("=", 1)
+
+            if saved_key.strip().lower() == key:
+                return value.strip()
+
+        return None
 
     def get_context(self):
         return self.history[-self.context_size:]
